@@ -24,6 +24,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 // WAHA runs on localhost inside the same Fly.io machine (see fly.toml + Dockerfile).
 const WAHA_URL = process.env.WAHA_URL || "http://localhost:3000";
 const WAHA_SESSION = process.env.WAHA_SESSION || "default";
+// Must match WHATSAPP_API_KEY set for the waha process in supervisord.conf
+const WAHA_API_KEY = process.env.WAHA_API_KEY || "internal-waha-key-do-not-share";
 // Simple shared-secret so random people on the internet can't use your bridge.
 const BRIDGE_API_KEY = process.env.BRIDGE_API_KEY || "changeme";
 
@@ -46,7 +48,9 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.get("/status", checkAuth, async (req, res) => {
   try {
-    const r = await fetch(`${WAHA_URL}/api/sessions/${WAHA_SESSION}`);
+    const r = await fetch(`${WAHA_URL}/api/sessions/${WAHA_SESSION}`, {
+      headers: { "X-Api-Key": WAHA_API_KEY },
+    });
     const data = await r.json();
     res.json({ ok: true, status: data.status || "UNKNOWN", raw: data });
   } catch (err) {
@@ -56,7 +60,9 @@ app.get("/status", checkAuth, async (req, res) => {
 
 app.get("/qr", checkAuth, async (req, res) => {
   try {
-    const r = await fetch(`${WAHA_URL}/api/${WAHA_SESSION}/auth/qr`);
+    const r = await fetch(`${WAHA_URL}/api/${WAHA_SESSION}/auth/qr`, {
+      headers: { "X-Api-Key": WAHA_API_KEY },
+    });
     const buffer = await r.buffer();
     res.set("Content-Type", "image/png");
     res.send(buffer);
@@ -74,7 +80,7 @@ app.post("/send-text", checkAuth, async (req, res) => {
   try {
     const r = await fetch(`${WAHA_URL}/api/sendText`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Api-Key": WAHA_API_KEY },
       body: JSON.stringify({
         session: WAHA_SESSION,
         chatId: toChatId(phone),
@@ -97,7 +103,7 @@ app.post("/send-file-url", checkAuth, async (req, res) => {
   try {
     const r = await fetch(`${WAHA_URL}/api/sendFile`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Api-Key": WAHA_API_KEY },
       body: JSON.stringify({
         session: WAHA_SESSION,
         chatId: toChatId(phone),
@@ -122,7 +128,7 @@ app.post("/send-file-upload", checkAuth, upload.single("file"), async (req, res)
     const base64 = req.file.buffer.toString("base64");
     const r = await fetch(`${WAHA_URL}/api/sendFile`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Api-Key": WAHA_API_KEY },
       body: JSON.stringify({
         session: WAHA_SESSION,
         chatId: toChatId(phone),
