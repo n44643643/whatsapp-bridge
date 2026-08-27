@@ -1,0 +1,17 @@
+{
+  "name": "whatsapp-bridge-server",
+  "version": "1.0.0",
+  "description": "Bridge server between Nmod/PenguinMod extension and WAHA (WhatsApp HTTP API)",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^3.3.2",
+    "multer": "^1.4.5-lts.1",
+    "form-data": "^4.0.0"
+  }
+}

@@ -1,0 +1,24 @@
+app = "n44643643-whatsapp-bridge"   # dacă e deja luat, Fly te lasă să alegi altul la fly launch
+primary_region = "otp"          # otp = Varșovia, cel mai apropiat de România pe Fly.io
+
+[build]
+
+[env]
+  BRIDGE_API_KEY = "changeme"   # suprascrie asta cu 'fly secrets set BRIDGE_API_KEY=...'
+  WAHA_SESSION = "default"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false    # important: nu opri mașina, altfel pierzi sesiunea WhatsApp
+  auto_start_machines = true
+  min_machines_running = 1
+
+[mounts]
+  source = "waha_data"
+  destination = "/waha-app/.sessions"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 1024
