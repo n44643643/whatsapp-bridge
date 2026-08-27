@@ -49,13 +49,32 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 async function ensureSession() {
   // Try to start the session; WAHA returns 422 if it already exists, which is fine.
   try {
-    await fetch(`${WAHA_URL}/api/sessions/start`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Api-Key": WAHA_API_KEY },
-      body: JSON.stringify({ name: WAHA_SESSION }),
+    const r = await fetch(`${WAHA_URL}/api/sessions`, {
+      headers: { "X-Api-Key": WAHA_API_KEY },
     });
+    const sessions = await r.json();
+    const exists = Array.isArray(sessions) && sessions.some((s) => s.name === WAHA_SESSION);
+
+    if (!exists) {
+      await fetch(`${WAHA_URL}/api/sessions/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Api-Key": WAHA_API_KEY },
+        body: JSON.stringify({ name: WAHA_SESSION }),
+      });
+    }
+
+    // Poll until the session leaves STARTING (up to ~20s), so QR requests don't
+    // arrive before WAHA has reached SCAN_QR_CODE / WORKING / etc.
+    for (let i = 0; i < 10; i++) {
+      const check = await fetch(`${WAHA_URL}/api/sessions/${WAHA_SESSION}`, {
+        headers: { "X-Api-Key": WAHA_API_KEY },
+      });
+      const data = await check.json();
+      if (data.status && data.status !== "STARTING") break;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
   } catch (err) {
-    // ignore — session may already exist or be starting
+    // ignore — best-effort; the actual endpoint call below will surface real errors
   }
 }
 
