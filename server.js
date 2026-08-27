@@ -94,9 +94,13 @@ app.get("/status", checkAuth, async (req, res) => {
 app.get("/qr", checkAuth, async (req, res) => {
   try {
     await ensureSession();
-    const r = await fetch(`${WAHA_URL}/api/${WAHA_SESSION}/auth/qr`, {
-      headers: { "X-Api-Key": WAHA_API_KEY },
+    const r = await fetch(`${WAHA_URL}/api/${WAHA_SESSION}/auth/qr?format=image`, {
+      headers: { "X-Api-Key": WAHA_API_KEY, "Accept": "image/png" },
     });
+    if (!r.ok) {
+      const errText = await r.text();
+      return res.status(r.status).json({ ok: false, error: errText });
+    }
     const buffer = await r.buffer();
     res.set("Content-Type", "image/png");
     res.send(buffer);
