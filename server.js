@@ -46,8 +46,22 @@ function toChatId(phone) {
 // ---- Health / status -----------------------------------------
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+async function ensureSession() {
+  // Try to start the session; WAHA returns 422 if it already exists, which is fine.
+  try {
+    await fetch(`${WAHA_URL}/api/sessions/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Api-Key": WAHA_API_KEY },
+      body: JSON.stringify({ name: WAHA_SESSION }),
+    });
+  } catch (err) {
+    // ignore — session may already exist or be starting
+  }
+}
+
 app.get("/status", checkAuth, async (req, res) => {
   try {
+    await ensureSession();
     const r = await fetch(`${WAHA_URL}/api/sessions/${WAHA_SESSION}`, {
       headers: { "X-Api-Key": WAHA_API_KEY },
     });
@@ -60,6 +74,7 @@ app.get("/status", checkAuth, async (req, res) => {
 
 app.get("/qr", checkAuth, async (req, res) => {
   try {
+    await ensureSession();
     const r = await fetch(`${WAHA_URL}/api/${WAHA_SESSION}/auth/qr`, {
       headers: { "X-Api-Key": WAHA_API_KEY },
     });
